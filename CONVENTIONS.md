@@ -1,0 +1,2 @@
+- Frontend content must be in Polish
+- Frontend code and components must be in English

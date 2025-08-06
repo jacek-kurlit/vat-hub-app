@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import Sidebar from "./components/Sidebar.vue";
+import NotificationsView from "./components/NotificationsView.vue";
+import ContractorsView from "./components/ContractorsView.vue";
 
-const selectedItem = ref("notyfikacje");
+const selectedItem = ref("notifications");
 
 const menuItems = [
   {
     title: "Notyfikacje",
-    value: "notyfikacje",
+    value: "notifications",
     icon: "mdi-bell"
   },
   {
     title: "Kontrahenci",
-    value: "kontrahenci",
+    value: "contractors",
     icon: "mdi-account-group"
   }
 ];
@@ -23,44 +26,18 @@ const selectMenuItem = (item: string) => {
 
 <template>
   <v-app>
-    <v-navigation-drawer permanent width="200">
-      <v-list>
-        <v-list-item
-          v-for="item in menuItems"
-          :key="item.value"
-          :prepend-icon="item.icon"
-          :title="item.title"
-          :active="selectedItem === item.value"
-          :color="selectedItem === item.value ? 'green' : undefined"
-          @click="selectMenuItem(item.value)"
-          class="mb-1"
-        ></v-list-item>
-      </v-list>
-    </v-navigation-drawer>
+    <Sidebar 
+      :selected-item="selectedItem"
+      :menu-items="menuItems"
+      @select-item="selectMenuItem"
+    />
 
     <v-main>
       <v-container fluid>
         <v-row>
           <v-col cols="12">
-            <div v-if="selectedItem === 'notyfikacje'">
-              <h1 class="text-h4 mb-4">Notyfikacje</h1>
-              <v-card>
-                <v-card-text>
-                  <p>Tutaj będą wyświetlane notyfikacje systemu.</p>
-                  <p>Placeholder dla funkcjonalności notyfikacji.</p>
-                </v-card-text>
-              </v-card>
-            </div>
-            
-            <div v-if="selectedItem === 'kontrahenci'">
-              <h1 class="text-h4 mb-4">Kontrahenci</h1>
-              <v-card>
-                <v-card-text>
-                  <p>Tutaj będzie lista kontrahentów.</p>
-                  <p>Placeholder dla zarządzania kontrahentami.</p>
-                </v-card-text>
-              </v-card>
-            </div>
+            <NotificationsView v-if="selectedItem === 'notifications'" />
+            <ContractorsView v-if="selectedItem === 'contractors'" />
           </v-col>
         </v-row>
       </v-container>
