@@ -1,17 +1,235 @@
 <template>
   <div>
     <h1 class="text-h4 mb-4">Kontrahenci</h1>
+    
     <v-card>
-      <v-card-text>
-        <p>Tutaj będzie lista kontrahentów.</p>
-        <p>Placeholder dla zarządzania kontrahentami.</p>
-      </v-card-text>
+      <v-card-title>
+        <v-row align="center">
+          <v-col>
+            Lista kontrahentów
+          </v-col>
+          <v-col cols="auto">
+            <v-btn 
+              color="primary" 
+              @click="refreshData"
+              :loading="loading"
+            >
+              <v-icon left>mdi-refresh</v-icon>
+              Odśwież
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-card-title>
+
+      <v-data-table
+        :headers="headers"
+        :items="contractors"
+        :loading="loading"
+        :items-per-page="itemsPerPage"
+        :items-per-page-options="[10, 20, 30]"
+        :page="currentPage"
+        :server-items-length="totalItems"
+        @update:page="handlePageChange"
+        @update:items-per-page="handleItemsPerPageChange"
+        class="elevation-1"
+      >
+        <template v-slot:item.vatPaymentStatus="{ item }">
+          <v-chip
+            :color="getStatusColor(item.vatPaymentStatus)"
+            :prepend-icon="getStatusIcon(item.vatPaymentStatus)"
+            size="small"
+          >
+            {{ getStatusText(item.vatPaymentStatus) }}
+          </v-chip>
+        </template>
+
+        <template v-slot:item.lastUpdateDate="{ item }">
+          {{ formatDate(item.lastUpdateDate) }}
+        </template>
+
+        <template v-slot:no-data>
+          <v-alert type="info" class="ma-4">
+            Brak danych do wyświetlenia
+          </v-alert>
+        </template>
+      </v-data-table>
     </v-card>
   </div>
 </template>
 
 <script setup lang="ts">
-// Contractors component logic
+import { ref, onMounted } from 'vue';
+
+interface Contractor {
+  id: string;
+  name: string;
+  vatId: string;
+  vatPaymentStatus: 'active' | 'inactive' | 'unknown';
+  lastUpdateDate: string;
+}
+
+const loading = ref(false);
+const contractors = ref<Contractor[]>([]);
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const totalItems = ref(0);
+
+const headers = [
+  {
+    title: 'Nazwa',
+    key: 'name',
+    sortable: true,
+  },
+  {
+    title: 'NIP',
+    key: 'vatId',
+    sortable: true,
+  },
+  {
+    title: 'Status VAT',
+    key: 'vatPaymentStatus',
+    sortable: true,
+    align: 'center' as const,
+  },
+  {
+    title: 'Ostatnia aktualizacja',
+    key: 'lastUpdateDate',
+    sortable: true,
+  },
+];
+
+// Mock data function - replace with actual Tauri API call later
+const fetchContractors = async (page: number, limit: number): Promise<{ data: Contractor[], total: number }> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Mock data
+  const mockData: Contractor[] = [
+    {
+      id: '1',
+      name: 'ABC Sp. z o.o.',
+      vatId: '1234567890',
+      vatPaymentStatus: 'active',
+      lastUpdateDate: '2024-01-15T10:30:00Z',
+    },
+    {
+      id: '2',
+      name: 'XYZ S.A.',
+      vatId: '0987654321',
+      vatPaymentStatus: 'inactive',
+      lastUpdateDate: '2024-01-14T14:20:00Z',
+    },
+    {
+      id: '3',
+      name: 'DEF Przedsiębiorstwo',
+      vatId: '1122334455',
+      vatPaymentStatus: 'unknown',
+      lastUpdateDate: '2024-01-13T09:15:00Z',
+    },
+    {
+      id: '4',
+      name: 'GHI Handel',
+      vatId: '5566778899',
+      vatPaymentStatus: 'active',
+      lastUpdateDate: '2024-01-12T16:45:00Z',
+    },
+    {
+      id: '5',
+      name: 'JKL Usługi',
+      vatId: '9988776655',
+      vatPaymentStatus: 'active',
+      lastUpdateDate: '2024-01-11T11:30:00Z',
+    },
+  ];
+
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const paginatedData = mockData.slice(startIndex, endIndex);
+
+  return {
+    data: paginatedData,
+    total: mockData.length,
+  };
+};
+
+const loadContractors = async () => {
+  loading.value = true;
+  try {
+    const result = await fetchContractors(currentPage.value, itemsPerPage.value);
+    contractors.value = result.data;
+    totalItems.value = result.total;
+  } catch (error) {
+    console.error('Error loading contractors:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const refreshData = () => {
+  loadContractors();
+};
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+  loadContractors();
+};
+
+const handleItemsPerPageChange = (newSize: number) => {
+  itemsPerPage.value = newSize;
+  currentPage.value = 1;
+  loadContractors();
+};
+
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case 'active':
+      return 'success';
+    case 'inactive':
+      return 'error';
+    case 'unknown':
+    default:
+      return 'warning';
+  }
+};
+
+const getStatusIcon = (status: string): string => {
+  switch (status) {
+    case 'active':
+      return 'mdi-check-circle';
+    case 'inactive':
+      return 'mdi-close-circle';
+    case 'unknown':
+    default:
+      return 'mdi-help-circle';
+  }
+};
+
+const getStatusText = (status: string): string => {
+  switch (status) {
+    case 'active':
+      return 'Aktywny';
+    case 'inactive':
+      return 'Nieaktywny';
+    case 'unknown':
+    default:
+      return 'Nieznany';
+  }
+};
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('pl-PL', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+onMounted(() => {
+  loadContractors();
+});
 </script>
 
 <style scoped>
