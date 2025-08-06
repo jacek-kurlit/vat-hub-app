@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@mdi/font@7": "7.4.47",
     "npm:@tauri-apps/api@2": "2.7.0",
     "npm:@tauri-apps/cli@2": "2.7.1",
     "npm:@tauri-apps/plugin-opener@2": "2.4.0",
@@ -8,7 +9,8 @@
     "npm:typescript@~5.6.2": "5.6.3",
     "npm:vite@^6.0.3": "6.3.5_picomatch@4.0.3",
     "npm:vue-tsc@^2.1.10": "2.2.12_typescript@5.6.3",
-    "npm:vue@^3.5.13": "3.5.18_typescript@5.6.3"
+    "npm:vue@^3.5.0": "3.5.18_typescript@5.6.3",
+    "npm:vuetify@^3.9.0": "3.9.4_typescript@5.6.3_vue@3.5.18__typescript@5.6.3"
   },
   "npm": {
     "@babel/helper-string-parser@7.27.1": {
@@ -163,6 +165,9 @@
     },
     "@jridgewell/sourcemap-codec@1.5.4": {
       "integrity": "sha512-VT2+G1VQs/9oz078bLrYbecdZKs912zQlkelYpuf+SXF+QvZDYJlbx/LSx+meSAwdDFnF8FVXW92AVjjkVmgFw=="
+    },
+    "@mdi/font@7.4.47": {
+      "integrity": "sha512-43MtGpd585SNzHZPcYowu/84Vz2a2g31TvPMTm9uTiCSWzaheQySUcSyUH/46fPnuPQWof2yd0pGBtzee/IQWw=="
     },
     "@rollup/rollup-android-arm-eabi@4.46.2": {
       "integrity": "sha512-Zj3Hl6sN34xJtMv7Anwb5Gu01yujyE/cLBDB2gnHTAHaWS1Z38L7kuSG+oAh0giZMqG060f/YBStXtMH6FvPMA==",
@@ -662,11 +667,22 @@
       "optionalPeers": [
         "typescript"
       ]
+    },
+    "vuetify@3.9.4_typescript@5.6.3_vue@3.5.18__typescript@5.6.3": {
+      "integrity": "sha512-OUdXVoThHUydJHyFsUHGxKxZ333hXKquRNn2ycqouO08ehi3005QE9tLPkwcBii4sAYZg7mADMRp7JbcNiNrTQ==",
+      "dependencies": [
+        "typescript",
+        "vue"
+      ],
+      "optionalPeers": [
+        "typescript"
+      ]
     }
   },
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:@mdi/font@7",
         "npm:@tauri-apps/api@2",
         "npm:@tauri-apps/cli@2",
         "npm:@tauri-apps/plugin-opener@2",
@@ -674,7 +690,8 @@
         "npm:typescript@~5.6.2",
         "npm:vite@^6.0.3",
         "npm:vue-tsc@^2.1.10",
-        "npm:vue@^3.5.13"
+        "npm:vue@^3.5.0",
+        "npm:vuetify@^3.9.0"
       ]
     }
   }
