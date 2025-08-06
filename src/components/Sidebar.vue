@@ -59,7 +59,6 @@ const isChildSelected = (item: MenuItem): boolean => {
             :active="selectedItem === child.value"
             :color="selectedItem === child.value ? 'green' : undefined"
             @click="selectMenuItem(child.value)"
-            class="ml-1"
           ></v-list-item>
         </v-list-group>
 
