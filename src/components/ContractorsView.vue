@@ -76,11 +76,18 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 
+enum VatPaymentStatus {
+  ACTIVE = 'active',
+  EXEMPT = 'exempt',
+  INACTIVE = 'inactive',
+  UNKNOWN = 'unknown'
+}
+
 interface Contractor {
   id: string;
   name: string;
   vatId: string;
-  vatPaymentStatus: 'active' | 'inactive' | 'unknown';
+  vatPaymentStatus: VatPaymentStatus;
   lastUpdateDate: string;
 }
 
@@ -126,35 +133,35 @@ const fetchContractors = async (page: number, limit: number, search?: string): P
       id: '1',
       name: 'ABC Sp. z o.o.',
       vatId: '1234567890',
-      vatPaymentStatus: 'active',
+      vatPaymentStatus: VatPaymentStatus.ACTIVE,
       lastUpdateDate: '2024-01-15T10:30:00Z',
     },
     {
       id: '2',
       name: 'XYZ S.A.',
       vatId: '0987654321',
-      vatPaymentStatus: 'inactive',
+      vatPaymentStatus: VatPaymentStatus.INACTIVE,
       lastUpdateDate: '2024-01-14T14:20:00Z',
     },
     {
       id: '3',
       name: 'DEF Przedsiębiorstwo',
       vatId: '1122334455',
-      vatPaymentStatus: 'unknown',
+      vatPaymentStatus: VatPaymentStatus.UNKNOWN,
       lastUpdateDate: '2024-01-13T09:15:00Z',
     },
     {
       id: '4',
       name: 'GHI Handel',
       vatId: '5566778899',
-      vatPaymentStatus: 'active',
+      vatPaymentStatus: VatPaymentStatus.ACTIVE,
       lastUpdateDate: '2024-01-12T16:45:00Z',
     },
     {
       id: '5',
       name: 'JKL Usługi',
       vatId: '9988776655',
-      vatPaymentStatus: 'active',
+      vatPaymentStatus: VatPaymentStatus.EXEMPT,
       lastUpdateDate: '2024-01-11T11:30:00Z',
     },
   ];
@@ -212,37 +219,43 @@ const handleSearch = () => {
   loadContractors();
 };
 
-const getStatusColor = (status: string): string => {
+const getStatusColor = (status: VatPaymentStatus): string => {
   switch (status) {
-    case 'active':
+    case VatPaymentStatus.ACTIVE:
       return 'success';
-    case 'inactive':
+    case VatPaymentStatus.EXEMPT:
+      return 'info';
+    case VatPaymentStatus.INACTIVE:
       return 'error';
-    case 'unknown':
+    case VatPaymentStatus.UNKNOWN:
     default:
       return 'warning';
   }
 };
 
-const getStatusIcon = (status: string): string => {
+const getStatusIcon = (status: VatPaymentStatus): string => {
   switch (status) {
-    case 'active':
+    case VatPaymentStatus.ACTIVE:
       return 'mdi-check-circle';
-    case 'inactive':
+    case VatPaymentStatus.EXEMPT:
+      return 'mdi-shield-check';
+    case VatPaymentStatus.INACTIVE:
       return 'mdi-close-circle';
-    case 'unknown':
+    case VatPaymentStatus.UNKNOWN:
     default:
       return 'mdi-help-circle';
   }
 };
 
-const getStatusText = (status: string): string => {
+const getStatusText = (status: VatPaymentStatus): string => {
   switch (status) {
-    case 'active':
+    case VatPaymentStatus.ACTIVE:
       return 'Aktywny';
-    case 'inactive':
+    case VatPaymentStatus.EXEMPT:
+      return 'Zwolniony';
+    case VatPaymentStatus.INACTIVE:
       return 'Nieaktywny';
-    case 'unknown':
+    case VatPaymentStatus.UNKNOWN:
     default:
       return 'Nieznany';
   }
