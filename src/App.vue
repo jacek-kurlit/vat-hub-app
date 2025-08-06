@@ -3,8 +3,10 @@ import { ref } from "vue";
 import Sidebar from "./components/Sidebar.vue";
 import NotificationsView from "./components/NotificationsView.vue";
 import ContractorsView from "./components/ContractorsView.vue";
+import ContractorsCreateView from "./components/ContractorsCreateView.vue";
+import ContractorsImportView from "./components/ContractorsImportView.vue";
 
-const selectedItem = ref("notifications");
+const selectedItem = ref("contractors-list");
 
 const menuItems = [
   {
@@ -15,7 +17,24 @@ const menuItems = [
   {
     title: "Kontrahenci",
     value: "contractors",
-    icon: "mdi-account-group"
+    icon: "mdi-account-group",
+    children: [
+      {
+        title: "Lista",
+        value: "contractors-list",
+        icon: "mdi-format-list-bulleted"
+      },
+      {
+        title: "Dodaj",
+        value: "contractors-create",
+        icon: "mdi-plus"
+      },
+      {
+        title: "Import",
+        value: "contractors-import",
+        icon: "mdi-import"
+      }
+    ]
   }
 ];
 
@@ -37,7 +56,9 @@ const selectMenuItem = (item: string) => {
         <v-row>
           <v-col cols="12">
             <NotificationsView v-if="selectedItem === 'notifications'" />
-            <ContractorsView v-if="selectedItem === 'contractors'" />
+            <ContractorsView v-if="selectedItem === 'contractors-list'" />
+            <ContractorsCreateView v-if="selectedItem === 'contractors-create'" />
+            <ContractorsImportView v-if="selectedItem === 'contractors-import'" />
           </v-col>
         </v-row>
       </v-container>
