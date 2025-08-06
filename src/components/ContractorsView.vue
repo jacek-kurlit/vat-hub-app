@@ -21,6 +21,22 @@
         </v-row>
       </v-card-title>
 
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="searchQuery"
+              label="Szukaj po nazwie lub NIP"
+              prepend-inner-icon="mdi-magnify"
+              clearable
+              variant="outlined"
+              density="compact"
+              @input="handleSearch"
+            ></v-text-field>
+          </v-col>
+        </v-row>
+      </v-card-text>
+
       <v-data-table
         :headers="headers"
         :items="contractors"
@@ -73,6 +89,7 @@ const contractors = ref<Contractor[]>([]);
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
 const totalItems = ref(0);
+const searchQuery = ref('');
 
 const headers = [
   {
@@ -99,7 +116,7 @@ const headers = [
 ];
 
 // Mock data function - replace with actual Tauri API call later
-const fetchContractors = async (page: number, limit: number): Promise<{ data: Contractor[], total: number }> => {
+const fetchContractors = async (page: number, limit: number, search?: string): Promise<{ data: Contractor[], total: number }> => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 500));
   
@@ -142,20 +159,30 @@ const fetchContractors = async (page: number, limit: number): Promise<{ data: Co
     },
   ];
 
+  // Filter data based on search query
+  let filteredData = mockData;
+  if (search && search.trim()) {
+    const searchLower = search.toLowerCase().trim();
+    filteredData = mockData.filter(contractor => 
+      contractor.name.toLowerCase().includes(searchLower) ||
+      contractor.vatId.includes(searchLower)
+    );
+  }
+
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
-  const paginatedData = mockData.slice(startIndex, endIndex);
+  const paginatedData = filteredData.slice(startIndex, endIndex);
 
   return {
     data: paginatedData,
-    total: mockData.length,
+    total: filteredData.length,
   };
 };
 
 const loadContractors = async () => {
   loading.value = true;
   try {
-    const result = await fetchContractors(currentPage.value, itemsPerPage.value);
+    const result = await fetchContractors(currentPage.value, itemsPerPage.value, searchQuery.value);
     contractors.value = result.data;
     totalItems.value = result.total;
   } catch (error) {
@@ -176,6 +203,11 @@ const handlePageChange = (page: number) => {
 
 const handleItemsPerPageChange = (newSize: number) => {
   itemsPerPage.value = newSize;
+  currentPage.value = 1;
+  loadContractors();
+};
+
+const handleSearch = () => {
   currentPage.value = 1;
   loadContractors();
 };
