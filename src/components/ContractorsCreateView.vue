@@ -44,14 +44,15 @@
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn
-          color="grey"
-          variant="outlined"
+          color="error"
+          variant="flat"
           @click="handleCancel"
         >
           Anuluj
         </v-btn>
         <v-btn
-          color="primary"
+          color="success"
+          variant="flat"
           :disabled="!formValid"
           :loading="loading"
           @click="handleSubmit"
