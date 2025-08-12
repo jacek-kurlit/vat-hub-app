@@ -19,7 +19,7 @@
                 required
                 clearable
                 @blur="fieldsTouched.name = true"
-                @input="fieldsTouched.name && validateField('name')"
+                @input="fieldsTouched.name && validateField()"
               ></v-text-field>
             </v-col>
             
@@ -34,7 +34,7 @@
                 placeholder="1234567890"
                 maxlength="10"
                 @blur="fieldsTouched.nip = true"
-                @input="fieldsTouched.nip && validateField('nip')"
+                @input="fieldsTouched.nip && validateField()"
               ></v-text-field>
             </v-col>
           </v-row>
