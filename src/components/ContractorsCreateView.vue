@@ -10,20 +10,7 @@
       <v-card-text>
         <v-form ref="form" v-model="formValid" @submit.prevent="handleSubmit">
           <v-row>
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="formData.name"
-                label="Nazwa kontrahenta"
-                :rules="fieldsTouched.name ? nameRules : []"
-                variant="outlined"
-                required
-                clearable
-                @blur="fieldsTouched.name = true"
-                @input="fieldsTouched.name && validateField()"
-              ></v-text-field>
-            </v-col>
-            
-            <v-col cols="12" md="6">
+            <v-col cols="12" md="8">
               <v-text-field
                 v-model="formData.nip"
                 label="NIP"
@@ -33,11 +20,91 @@
                 clearable
                 placeholder="1234567890"
                 maxlength="10"
+                :disabled="dataFetched"
                 @blur="fieldsTouched.nip = true"
                 @input="fieldsTouched.nip && validateField()"
               ></v-text-field>
             </v-col>
+            
+            <v-col cols="12" md="4" class="d-flex align-center">
+              <v-btn
+                color="primary"
+                variant="flat"
+                :disabled="!formData.nip || !validateNIP(formData.nip) || dataFetched"
+                :loading="fetchingData"
+                @click="fetchContractorData"
+              >
+                Pobierz dane
+              </v-btn>
+            </v-col>
           </v-row>
+
+          <div v-if="dataFetched">
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="formData.name"
+                  label="Nazwa kontrahenta"
+                  variant="outlined"
+                  readonly
+                ></v-text-field>
+              </v-col>
+              
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="formData.vatStatus"
+                  label="Status VAT"
+                  variant="outlined"
+                  readonly
+                ></v-text-field>
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="formData.regon"
+                  label="REGON"
+                  variant="outlined"
+                  readonly
+                ></v-text-field>
+              </v-col>
+              
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="formData.krs"
+                  label="KRS"
+                  variant="outlined"
+                  readonly
+                ></v-text-field>
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <v-col cols="12">
+                <v-textarea
+                  v-model="formData.residenceAddress"
+                  label="Adres siedziby"
+                  variant="outlined"
+                  readonly
+                  rows="3"
+                ></v-textarea>
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <v-col cols="12">
+                <v-textarea
+                  :model-value="formData.accountsNumbers.join('\n')"
+                  label="Numery kont"
+                  variant="outlined"
+                  readonly
+                  rows="3"
+                  hint="Każdy numer konta w osobnej linii"
+                ></v-textarea>
+              </v-col>
+            </v-row>
+          </div>
         </v-form>
       </v-card-text>
       
@@ -53,7 +120,7 @@
         <v-btn
           color="success"
           variant="flat"
-          :disabled="!formValid"
+          :disabled="!dataFetched"
           :loading="loading"
           @click="handleSubmit"
         >
@@ -70,15 +137,27 @@ import { ref, reactive } from 'vue';
 interface ContractorFormData {
   name: string;
   nip: string;
+  vatStatus: string;
+  regon: string;
+  krs: string;
+  residenceAddress: string;
+  accountsNumbers: string[];
 }
 
 const form = ref();
 const formValid = ref(false);
 const loading = ref(false);
+const fetchingData = ref(false);
+const dataFetched = ref(false);
 
 const formData = reactive<ContractorFormData>({
   name: '',
-  nip: ''
+  nip: '',
+  vatStatus: '',
+  regon: '',
+  krs: '',
+  residenceAddress: '',
+  accountsNumbers: []
 });
 
 // Track which fields have been blurred
@@ -116,10 +195,48 @@ const validateNIP = (nip: string): boolean => {
   return checksum === lastDigit;
 };
 
-const handleSubmit = async () => {
-  const { valid } = await form.value.validate();
+const fetchContractorData = async () => {
+  if (!formData.nip || !validateNIP(formData.nip)) return;
   
-  if (!valid) return;
+  fetchingData.value = true;
+  
+  try {
+    // TODO: Replace with actual Tauri API call
+    console.log('Fetching contractor data for NIP:', formData.nip);
+    
+    // Mock API call - simulate delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Mock response data
+    const mockData = {
+      name: 'Przykładowa Firma Sp. z o.o.',
+      vatStatus: 'Aktywny',
+      regon: '123456789',
+      krs: '0000123456',
+      residenceAddress: 'ul. Przykładowa 123\n00-001 Warszawa\nPolska',
+      accountsNumbers: ['12 3456 7890 1234 5678 9012 3456', '98 7654 3210 9876 5432 1098 7654']
+    };
+    
+    // Update form data
+    formData.name = mockData.name;
+    formData.vatStatus = mockData.vatStatus;
+    formData.regon = mockData.regon;
+    formData.krs = mockData.krs;
+    formData.residenceAddress = mockData.residenceAddress;
+    formData.accountsNumbers = mockData.accountsNumbers;
+    
+    dataFetched.value = true;
+    
+  } catch (error) {
+    console.error('Error fetching contractor data:', error);
+    alert('Wystąpił błąd podczas pobierania danych kontrahenta');
+  } finally {
+    fetchingData.value = false;
+  }
+};
+
+const handleSubmit = async () => {
+  if (!dataFetched.value) return;
   
   loading.value = true;
   
@@ -156,8 +273,14 @@ const validateField = () => {
 const resetForm = () => {
   formData.name = '';
   formData.nip = '';
+  formData.vatStatus = '';
+  formData.regon = '';
+  formData.krs = '';
+  formData.residenceAddress = '';
+  formData.accountsNumbers = [];
   fieldsTouched.name = false;
   fieldsTouched.nip = false;
+  dataFetched.value = false;
   form.value?.resetValidation();
 };
 </script>
