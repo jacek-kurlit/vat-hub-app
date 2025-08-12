@@ -23,6 +23,7 @@
                 :disabled="dataFetched"
                 @blur="fieldsTouched.nip = true"
                 @input="fieldsTouched.nip && validateField()"
+                @keyup.enter="handleNipEnter"
               ></v-text-field>
             </v-col>
             
@@ -134,6 +135,10 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
 
+const emit = defineEmits<{
+  'navigate-to-list': []
+}>();
+
 interface ContractorFormData {
   name: string;
   nip: string;
@@ -196,7 +201,7 @@ const validateNIP = (nip: string): boolean => {
 };
 
 const fetchContractorData = async () => {
-  if (!formData.nip || !validateNIP(formData.nip)) return;
+  if (!validateNIP(formData.nip)) return;
   
   fetchingData.value = true;
   
@@ -261,8 +266,14 @@ const handleSubmit = async () => {
   }
 };
 
+const handleNipEnter = () => {
+  if (!dataFetched.value) {
+    fetchContractorData();
+  }
+};
+
 const handleCancel = () => {
-  resetForm();
+  emit('navigate-to-list');
 };
 
 const validateField = () => {
