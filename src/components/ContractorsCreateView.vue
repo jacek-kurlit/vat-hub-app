@@ -202,11 +202,8 @@ const fetchContractorData = async () => {
   
   try {
     console.log('Fetching contractor data for NIP:', formData.nip);
-    
-    // Call Rust backend command
     const contractorData = await invoke<ContractorFormData>('fetch_contractor_data', { nip: formData.nip });
-    
-    // Update form data with response from backend (preserve NIP field)
+    console.log('Fetched contractor data:', contractorData);
     Object.assign(formData, contractorData, { nip: formData.nip });
     
     dataFetched.value = true;
@@ -225,20 +222,20 @@ const handleSubmit = async () => {
   loading.value = true;
   
   try {
-    // TODO: Replace with actual Tauri API call
-    console.log('Creating contractor:', formData);
+    console.log('Saving contractor:', formData);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Call Rust backend command
+    await invoke('save_contractor', { contractor: formData });
     
     // Show success message or redirect
     alert('Kontrahent został dodany pomyślnie!');
     
-    // Reset form
+    // Reset form and navigate back to list
     resetForm();
+    emit('navigate-to-list');
     
   } catch (error) {
-    console.error('Error creating contractor:', error);
+    console.error('Error saving contractor:', error);
     alert('Wystąpił błąd podczas dodawania kontrahenta');
   } finally {
     loading.value = false;

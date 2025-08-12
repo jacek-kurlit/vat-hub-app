@@ -21,7 +21,10 @@ pub fn run() {
             app.manage(watcher_service);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![contractors::fetch_contractor_data])
+        .invoke_handler(tauri::generate_handler![
+            contractors::fetch_contractor_data,
+            contractors::save_contractor
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
