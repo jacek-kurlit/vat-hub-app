@@ -57,7 +57,10 @@ const selectMenuItem = (item: string) => {
           <v-col cols="12">
             <NotificationsView v-if="selectedItem === 'notifications'" />
             <ContractorsView v-if="selectedItem === 'contractors-list'" />
-            <ContractorsCreateView v-if="selectedItem === 'contractors-create'" />
+            <ContractorsCreateView 
+              v-if="selectedItem === 'contractors-create'" 
+              @navigate-to-list="selectMenuItem('contractors-list')"
+            />
             <ContractorsImportView v-if="selectedItem === 'contractors-import'" />
           </v-col>
         </v-row>
