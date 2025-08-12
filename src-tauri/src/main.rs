@@ -4,3 +4,4 @@
 fn main() {
     vat_hub_app_lib::run()
 }
+

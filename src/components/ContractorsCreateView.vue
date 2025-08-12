@@ -134,6 +134,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
+import { invoke } from '@tauri-apps/api/core';
 
 const emit = defineEmits<{
   'navigate-to-list': []
@@ -171,12 +172,6 @@ const fieldsTouched = reactive({
   nip: false
 });
 
-const nameRules = [
-  (v: string) => !!v || 'Nazwa jest wymagana',
-  (v: string) => (v && v.length >= 2) || 'Nazwa musi mieć co najmniej 2 znaki',
-  (v: string) => (v && v.length <= 100) || 'Nazwa nie może być dłuższa niż 100 znaków'
-];
-
 const nipRules = [
   (v: string) => !!v || 'NIP jest wymagany',
   (v: string) => /^\d{10}$/.test(v) || 'NIP musi składać się z 10 cyfr',
@@ -206,29 +201,19 @@ const fetchContractorData = async () => {
   fetchingData.value = true;
   
   try {
-    // TODO: Replace with actual Tauri API call
     console.log('Fetching contractor data for NIP:', formData.nip);
     
-    // Mock API call - simulate delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Call Rust backend command
+    const contractorData = await invoke('fetch_contractor_data', { nip: formData.nip });
+    console.log('Contractor data fetched:', contractorData);
     
-    // Mock response data
-    const mockData = {
-      name: 'Przykładowa Firma Sp. z o.o.',
-      vatStatus: 'Aktywny',
-      regon: '123456789',
-      krs: '0000123456',
-      residenceAddress: 'ul. Przykładowa 123\n00-001 Warszawa\nPolska',
-      accountsNumbers: ['12 3456 7890 1234 5678 9012 3456', '98 7654 3210 9876 5432 1098 7654']
-    };
-    
-    // Update form data
-    formData.name = mockData.name;
-    formData.vatStatus = mockData.vatStatus;
-    formData.regon = mockData.regon;
-    formData.krs = mockData.krs;
-    formData.residenceAddress = mockData.residenceAddress;
-    formData.accountsNumbers = mockData.accountsNumbers;
+    // Update form data with response from backend
+    formData.name = contractorData.name;
+    formData.vatStatus = contractorData.vatStatus;
+    formData.regon = contractorData.regon;
+    formData.krs = contractorData.krs;
+    formData.residenceAddress = contractorData.residenceAddress;
+    formData.accountsNumbers = contractorData.accountsNumbers;
     
     dataFetched.value = true;
     
