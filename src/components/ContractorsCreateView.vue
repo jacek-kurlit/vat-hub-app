@@ -53,7 +53,7 @@
               
               <v-col cols="12" md="6">
                 <v-text-field
-                  v-model="formData.vatStatus"
+                  v-model="formData.vat_status"
                   label="Status VAT"
                   variant="outlined"
                   readonly
@@ -84,7 +84,7 @@
             <v-row>
               <v-col cols="12">
                 <v-textarea
-                  v-model="formData.residenceAddress"
+                  v-model="formData.residence_address"
                   label="Adres siedziby"
                   variant="outlined"
                   readonly
@@ -96,7 +96,7 @@
             <v-row>
               <v-col cols="12">
                 <v-textarea
-                  :model-value="formData.accountsNumbers.join('\n')"
+                  :model-value="formData.accounts_numbers.join('\n')"
                   label="Numery kont"
                   variant="outlined"
                   readonly
@@ -140,23 +140,14 @@ const emit = defineEmits<{
   'navigate-to-list': []
 }>();
 
-interface ContractorData {
+interface ContractorFormData {
   name: string;
+  nip: string;
   vat_status: string;
   regon: string;
   krs: string;
   residence_address: string;
   accounts_numbers: string[];
-}
-
-interface ContractorFormData {
-  name: string;
-  nip: string;
-  vatStatus: string;
-  regon: string;
-  krs: string;
-  residenceAddress: string;
-  accountsNumbers: string[];
 }
 
 const form = ref();
@@ -168,11 +159,11 @@ const dataFetched = ref(false);
 const formData = reactive<ContractorFormData>({
   name: '',
   nip: '',
-  vatStatus: '',
+  vat_status: '',
   regon: '',
   krs: '',
-  residenceAddress: '',
-  accountsNumbers: []
+  residence_address: '',
+  accounts_numbers: []
 });
 
 // Track which fields have been blurred
@@ -213,15 +204,10 @@ const fetchContractorData = async () => {
     console.log('Fetching contractor data for NIP:', formData.nip);
     
     // Call Rust backend command
-    const contractorData = await invoke<ContractorData>('fetch_contractor_data', { nip: formData.nip });
+    const contractorData = await invoke<ContractorFormData>('fetch_contractor_data', { nip: formData.nip });
     
-    // Update form data with response from backend (converting snake_case to camelCase)
-    formData.name = contractorData.name;
-    formData.vatStatus = contractorData.vat_status;
-    formData.regon = contractorData.regon;
-    formData.krs = contractorData.krs;
-    formData.residenceAddress = contractorData.residence_address;
-    formData.accountsNumbers = contractorData.accounts_numbers;
+    // Update form data with response from backend (preserve NIP field)
+    Object.assign(formData, contractorData, { nip: formData.nip });
     
     dataFetched.value = true;
     
@@ -277,11 +263,11 @@ const validateField = () => {
 const resetForm = () => {
   formData.name = '';
   formData.nip = '';
-  formData.vatStatus = '';
+  formData.vat_status = '';
   formData.regon = '';
   formData.krs = '';
-  formData.residenceAddress = '';
-  formData.accountsNumbers = [];
+  formData.residence_address = '';
+  formData.accounts_numbers = [];
   fieldsTouched.name = false;
   fieldsTouched.nip = false;
   dataFetched.value = false;
