@@ -140,6 +140,15 @@ const emit = defineEmits<{
   'navigate-to-list': []
 }>();
 
+interface ContractorData {
+  name: string;
+  vat_status: string;
+  regon: string;
+  krs: string;
+  residence_address: string;
+  accounts_numbers: string[];
+}
+
 interface ContractorFormData {
   name: string;
   nip: string;
@@ -204,16 +213,15 @@ const fetchContractorData = async () => {
     console.log('Fetching contractor data for NIP:', formData.nip);
     
     // Call Rust backend command
-    const contractorData = await invoke('fetch_contractor_data', { nip: formData.nip });
-    console.log('Contractor data fetched:', contractorData);
+    const contractorData = await invoke<ContractorData>('fetch_contractor_data', { nip: formData.nip });
     
-    // Update form data with response from backend
+    // Update form data with response from backend (converting snake_case to camelCase)
     formData.name = contractorData.name;
-    formData.vatStatus = contractorData.vatStatus;
+    formData.vatStatus = contractorData.vat_status;
     formData.regon = contractorData.regon;
     formData.krs = contractorData.krs;
-    formData.residenceAddress = contractorData.residenceAddress;
-    formData.accountsNumbers = contractorData.accountsNumbers;
+    formData.residenceAddress = contractorData.residence_address;
+    formData.accountsNumbers = contractorData.accounts_numbers;
     
     dataFetched.value = true;
     
