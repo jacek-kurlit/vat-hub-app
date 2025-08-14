@@ -1,9 +1,7 @@
 mod contractors;
 mod db;
-mod payers;
 
 pub use db::*;
-pub use payers::*;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -14,11 +12,11 @@ pub fn run() {
             let handle = app.handle();
             let database =
                 tauri::async_runtime::block_on(async { db::Database::new(handle).await })?;
+            let client = reqwest::Client::new();
 
-            let watcher_service = payers::WatcherService::new(database.clone());
+            let contractor_service = contractors::ContractorService::new(database.clone(), client);
 
-            app.manage(database);
-            app.manage(watcher_service);
+            app.manage(contractor_service);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

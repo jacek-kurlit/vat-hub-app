@@ -1,3 +1,4 @@
+use reqwest::Client;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -34,16 +35,31 @@ pub struct Subject {
     pub registration_legal_date: chrono::NaiveDate,
 }
 
-pub async fn fetch_contractor_data(nip: &str) -> Result<FetchContractorResponse, String> {
-    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-    let url = format!(
-        "https://wl-api.mf.gov.pl/api/search/nip/{}?date={}",
-        nip, today
-    );
-    reqwest::get(url)
-        .await
-        .map_err(|e| e.to_string())?
-        .json::<FetchContractorResponse>()
-        .await
-        .map_err(|e| e.to_string())
+pub struct ContracorApiClient {
+    client: reqwest::Client,
+}
+
+impl ContracorApiClient {
+    pub fn new(client: Client) -> Self {
+        Self { client }
+    }
+
+    pub async fn fetch_contractor_data(
+        &self,
+        nip: &str,
+    ) -> Result<FetchContractorResponse, String> {
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+        let url = format!(
+            "https://wl-api.mf.gov.pl/api/search/nip/{}?date={}",
+            nip, today
+        );
+        self.client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?
+            .json::<FetchContractorResponse>()
+            .await
+            .map_err(|e| e.to_string())
+    }
 }
