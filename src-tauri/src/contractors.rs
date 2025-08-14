@@ -13,16 +13,18 @@ pub struct Contractor {
 
 #[tauri::command]
 pub async fn fetch_contractor_data(nip: String) -> Result<Contractor, String> {
-    api::fetch_contractor_data(&nip).await.map(|data| {
-        let subject = data.result.subject;
-        Contractor {
-            name: subject.name,
-            vat_status: subject.status_vat,
-            regon: subject.regon,
-            krs: subject.krs.unwrap_or_default(),
-            residence_address: subject.residence_address,
-            accounts_numbers: subject.account_numbers,
-        }
+    let subject = api::fetch_contractor_data(&nip)
+        .await?
+        .result
+        .subject
+        .ok_or_else(|| "Nie znaleziono kontrahenta".to_string())?;
+    Ok(Contractor {
+        name: subject.name,
+        vat_status: subject.status_vat,
+        regon: subject.regon,
+        krs: subject.krs.unwrap_or_default(),
+        residence_address: subject.residence_address,
+        accounts_numbers: subject.account_numbers,
     })
 }
 

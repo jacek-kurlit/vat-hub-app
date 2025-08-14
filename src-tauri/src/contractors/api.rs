@@ -8,7 +8,7 @@ pub struct FetchContractorResponse {
 #[derive(Deserialize)]
 #[allow(dead_code)]
 pub struct ResultData {
-    pub subject: Subject,
+    pub subject: Option<Subject>,
     #[serde(rename = "requestDateTime")]
     pub request_date_time: String,
     #[serde(rename = "requestId")]

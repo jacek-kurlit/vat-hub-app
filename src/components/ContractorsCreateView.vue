@@ -213,7 +213,7 @@ const fetchContractorData = async () => {
     
   } catch (error) {
     console.error('Error fetching contractor data:', error);
-    showError('Błąd', 'Wystąpił błąd podczas pobierania danych kontrahenta');
+    showError('Błąd', 'Wystąpił błąd podczas pobierania danych - ' + error);
   } finally {
     fetchingData.value = false;
   }
@@ -227,13 +227,10 @@ const handleSubmit = async () => {
   try {
     console.log('Saving contractor:', formData);
     
-    // Call Rust backend command
     await invoke('save_contractor', { contractor: formData });
     
-    // Show success message or redirect
     showSuccess('Sukces', 'Kontrahent został dodany pomyślnie!');
     
-    // Reset form and navigate back to list
     resetForm();
     emit('navigate-to-list');
     
