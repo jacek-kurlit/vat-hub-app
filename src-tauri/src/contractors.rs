@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+
+mod api;
 #[derive(Serialize, Deserialize)]
 pub struct Contractor {
     name: String,
@@ -10,21 +12,22 @@ pub struct Contractor {
 }
 
 #[tauri::command]
-pub async fn fetch_contractor_data() -> Result<Contractor, String> {
-    Ok(Contractor {
-        name: "Przykładowa Firma Sp. z o.o.".to_string(),
-        vat_status: "Aktywny".to_string(),
-        regon: "123456789".to_string(),
-        krs: "0000123456".to_string(),
-        residence_address: "ul. Przykładowa 123\n00-001 Warszawa\nPolska".to_string(),
-        accounts_numbers: vec![
-            "12 3456 7890 1234 5678 9012 3456".to_string(),
-            "98 7654 3210 9876 5432 1098 7654".to_string(),
-        ],
+pub async fn fetch_contractor_data(nip: String) -> Result<Contractor, String> {
+    api::fetch_contractor_data(&nip).await.map(|data| {
+        let subject = data.result.subject;
+        Contractor {
+            name: subject.name,
+            vat_status: subject.status_vat,
+            regon: subject.regon,
+            krs: subject.krs.unwrap_or_default(),
+            residence_address: subject.residence_address,
+            accounts_numbers: subject.account_numbers,
+        }
     })
 }
 
 #[tauri::command]
 pub async fn save_contractor(contractor: Contractor) -> Result<(), String> {
+    let _ = contractor;
     Ok(())
 }

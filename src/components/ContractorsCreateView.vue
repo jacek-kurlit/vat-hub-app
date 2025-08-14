@@ -135,10 +135,13 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
+import { useAlerts } from '../composables/useAlerts';
 
 const emit = defineEmits<{
   'navigate-to-list': []
 }>();
+
+const { showSuccess, showError } = useAlerts();
 
 interface ContractorFormData {
   name: string;
@@ -210,7 +213,7 @@ const fetchContractorData = async () => {
     
   } catch (error) {
     console.error('Error fetching contractor data:', error);
-    alert('Wystąpił błąd podczas pobierania danych kontrahenta');
+    showError('Błąd', 'Wystąpił błąd podczas pobierania danych kontrahenta');
   } finally {
     fetchingData.value = false;
   }
@@ -228,7 +231,7 @@ const handleSubmit = async () => {
     await invoke('save_contractor', { contractor: formData });
     
     // Show success message or redirect
-    alert('Kontrahent został dodany pomyślnie!');
+    showSuccess('Sukces', 'Kontrahent został dodany pomyślnie!');
     
     // Reset form and navigate back to list
     resetForm();
@@ -236,7 +239,7 @@ const handleSubmit = async () => {
     
   } catch (error) {
     console.error('Error saving contractor:', error);
-    alert('Wystąpił błąd podczas dodawania kontrahenta');
+    showError('Błąd', 'Wystąpił błąd podczas dodawania kontrahenta');
   } finally {
     loading.value = false;
   }
