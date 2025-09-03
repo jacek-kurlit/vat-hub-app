@@ -49,6 +49,15 @@
         @update:items-per-page="handleItemsPerPageChange"
         class="elevation-1"
       >
+        <template v-slot:item.vat_status="{ item }">
+          <v-chip
+            :color="getStatusColor(item.vat_status)"
+            :prepend-icon="getStatusIcon(item.vat_status)"
+            size="small"
+          >
+            {{item.vat_status }}
+          </v-chip>
+        </template>
 
         <template v-slot:no-data>
           <v-alert type="info" class="ma-4">
@@ -95,9 +104,10 @@ const headers = [
     sortable: true,
   },
   {
-    title: 'Status VAT',
+    title: 'Status',
     key: 'vat_status',
     sortable: true,
+    align: 'center' as const,
   },
   {
     title: 'REGON',
@@ -171,6 +181,31 @@ const handleSearch = () => {
   loadContractors();
 };
 
+const getStatusColor = (status: string): string => {
+  switch (status.toLowerCase()) {
+    case 'czynny':
+      return 'success';
+    case 'zwolniony':
+      return 'info';
+    case 'nieczynny':
+      return 'error';
+    default:
+      return 'warning';
+  }
+};
+
+const getStatusIcon = (status: string): string => {
+  switch (status.toLowerCase()) {
+    case 'czynny':
+      return 'mdi-check-circle';
+    case 'zwolniony':
+      return 'mdi-shield-check';
+    case 'nieczynny':
+      return 'mdi-close-circle';
+    default:
+      return 'mdi-help-circle';
+  }
+};
 
 onMounted(() => {
   loadContractors();
