@@ -47,7 +47,6 @@
                   v-model="formData.name"
                   label="Nazwa kontrahenta"
                   variant="outlined"
-                  readonly
                 ></v-text-field>
               </v-col>
               
@@ -56,7 +55,6 @@
                   v-model="formData.vat_status"
                   label="Status VAT"
                   variant="outlined"
-                  readonly
                 ></v-text-field>
               </v-col>
             </v-row>
@@ -67,7 +65,6 @@
                   v-model="formData.regon"
                   label="REGON"
                   variant="outlined"
-                  readonly
                 ></v-text-field>
               </v-col>
               
@@ -76,20 +73,26 @@
                   v-model="formData.krs"
                   label="KRS"
                   variant="outlined"
-                  readonly
                 ></v-text-field>
               </v-col>
             </v-row>
 
             <v-row>
               <v-col cols="12">
-                <v-textarea
+                <v-text-field
                   v-model="formData.residence_address"
                   label="Adres siedziby"
                   variant="outlined"
-                  readonly
-                  rows="3"
-                ></v-textarea>
+                ></v-text-field>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="formData.working_address"
+                  label="Adres prowadzenia działalności"
+                  variant="outlined"
+                ></v-text-field>
               </v-col>
             </v-row>
 
@@ -99,7 +102,6 @@
                   :model-value="formData.accounts_numbers.join('\n')"
                   label="Numery kont"
                   variant="outlined"
-                  readonly
                   rows="3"
                   hint="Każdy numer konta w osobnej linii"
                 ></v-textarea>
@@ -148,8 +150,9 @@ interface ContractorFormData {
   nip: string;
   vat_status: string;
   regon: string;
-  krs: string;
-  residence_address: string;
+  krs?: string;
+  residence_address?: string;
+  working_address?: string;
   accounts_numbers: string[];
 }
 
@@ -166,6 +169,7 @@ const formData = reactive<ContractorFormData>({
   regon: '',
   krs: '',
   residence_address: '',
+  working_address: '',
   accounts_numbers: []
 });
 
@@ -204,9 +208,7 @@ const fetchContractorData = async () => {
   fetchingData.value = true;
   
   try {
-    console.log('Fetching contractor data for NIP:', formData.nip);
     const contractorData = await invoke<ContractorFormData>('fetch_contractor_data', { nip: formData.nip });
-    console.log('Fetched contractor data:', contractorData);
     Object.assign(formData, contractorData, { nip: formData.nip });
     
     dataFetched.value = true;
@@ -229,7 +231,7 @@ const handleSubmit = async () => {
     
     await invoke('save_contractor', { contractor: formData });
     
-    showSuccess('Sukces', 'Kontrahent został dodany pomyślnie!');
+    showSuccess('Sukces', 'Kontrahent został pomyślnie dodany!');
     
     resetForm();
     emit('navigate-to-list');
@@ -264,6 +266,7 @@ const resetForm = () => {
   formData.regon = '';
   formData.krs = '';
   formData.residence_address = '';
+  formData.working_address = '';
   formData.accounts_numbers = [];
   fieldsTouched.name = false;
   fieldsTouched.nip = false;

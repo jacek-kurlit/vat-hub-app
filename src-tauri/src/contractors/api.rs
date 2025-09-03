@@ -28,7 +28,7 @@ pub struct Subject {
     pub nip: String,
     pub name: String,
     #[serde(rename = "residenceAddress")]
-    pub residence_address: String,
+    pub residence_address: Option<String>,
     #[serde(rename = "workingAddress")]
     pub working_address: Option<String>,
     #[serde(rename = "registrationLegalDate")]

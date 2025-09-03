@@ -49,19 +49,6 @@
         @update:items-per-page="handleItemsPerPageChange"
         class="elevation-1"
       >
-        <template v-slot:item.vatPaymentStatus="{ item }">
-          <v-chip
-            :color="getStatusColor(item.vatPaymentStatus)"
-            :prepend-icon="getStatusIcon(item.vatPaymentStatus)"
-            size="small"
-          >
-            {{ getStatusText(item.vatPaymentStatus) }}
-          </v-chip>
-        </template>
-
-        <template v-slot:item.lastUpdateDate="{ item }">
-          {{ formatDate(item.lastUpdateDate) }}
-        </template>
 
         <template v-slot:no-data>
           <v-alert type="info" class="ma-4">
@@ -75,20 +62,18 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { invoke } from '@tauri-apps/api/core';
 
-enum VatPaymentStatus {
-  ACTIVE = 'active',
-  EXEMPT = 'exempt',
-  INACTIVE = 'inactive',
-  UNKNOWN = 'unknown'
-}
 
 interface Contractor {
-  id: string;
   name: string;
-  vatId: string;
-  vatPaymentStatus: VatPaymentStatus;
-  lastUpdateDate: string;
+  nip: string;
+  vat_status: string;
+  regon: string;
+  krs: string;
+  residence_address?: string;
+  working_address?: string;
+  accounts_numbers: string[];
 }
 
 const loading = ref(false);
@@ -106,84 +91,51 @@ const headers = [
   },
   {
     title: 'NIP',
-    key: 'vatId',
+    key: 'nip',
     sortable: true,
   },
   {
     title: 'Status VAT',
-    key: 'vatPaymentStatus',
+    key: 'vat_status',
     sortable: true,
-    align: 'center' as const,
   },
   {
-    title: 'Ostatnia aktualizacja',
-    key: 'lastUpdateDate',
+    title: 'REGON',
+    key: 'regon',
+    sortable: true,
+  },
+  {
+    title: 'KRS',
+    key: 'krs',
     sortable: true,
   },
 ];
 
-// Mock data function - replace with actual Tauri API call later
 const fetchContractors = async (page: number, limit: number, search?: string): Promise<{ data: Contractor[], total: number }> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // Mock data
-  const mockData: Contractor[] = [
-    {
-      id: '1',
-      name: 'ABC Sp. z o.o.',
-      vatId: '1234567890',
-      vatPaymentStatus: VatPaymentStatus.ACTIVE,
-      lastUpdateDate: '2024-01-15T10:30:00Z',
-    },
-    {
-      id: '2',
-      name: 'XYZ S.A.',
-      vatId: '0987654321',
-      vatPaymentStatus: VatPaymentStatus.INACTIVE,
-      lastUpdateDate: '2024-01-14T14:20:00Z',
-    },
-    {
-      id: '3',
-      name: 'DEF Przedsiębiorstwo',
-      vatId: '1122334455',
-      vatPaymentStatus: VatPaymentStatus.UNKNOWN,
-      lastUpdateDate: '2024-01-13T09:15:00Z',
-    },
-    {
-      id: '4',
-      name: 'GHI Handel',
-      vatId: '5566778899',
-      vatPaymentStatus: VatPaymentStatus.ACTIVE,
-      lastUpdateDate: '2024-01-12T16:45:00Z',
-    },
-    {
-      id: '5',
-      name: 'JKL Usługi',
-      vatId: '9988776655',
-      vatPaymentStatus: VatPaymentStatus.EXEMPT,
-      lastUpdateDate: '2024-01-11T11:30:00Z',
-    },
-  ];
+  try {
+    const contractors = await invoke<Contractor[]>('fetch_contractors', { 
+      page: page,
+      pageSize: limit 
+    });
+    
+    // Filter data based on search query on frontend side
+    let filteredData = contractors;
+    if (search && search.trim()) {
+      const searchLower = search.toLowerCase().trim();
+      filteredData = contractors.filter(contractor => 
+        contractor.name.toLowerCase().includes(searchLower) ||
+        contractor.nip.includes(searchLower)
+      );
+    }
 
-  // Filter data based on search query
-  let filteredData = mockData;
-  if (search && search.trim()) {
-    const searchLower = search.toLowerCase().trim();
-    filteredData = mockData.filter(contractor => 
-      contractor.name.toLowerCase().includes(searchLower) ||
-      contractor.vatId.includes(searchLower)
-    );
+    return {
+      data: filteredData,
+      total: filteredData.length,
+    };
+  } catch (error) {
+    console.error('Error fetching contractors from Rust:', error);
+    throw error;
   }
-
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const paginatedData = filteredData.slice(startIndex, endIndex);
-
-  return {
-    data: paginatedData,
-    total: filteredData.length,
-  };
 };
 
 const loadContractors = async () => {
@@ -219,58 +171,6 @@ const handleSearch = () => {
   loadContractors();
 };
 
-const getStatusColor = (status: VatPaymentStatus): string => {
-  switch (status) {
-    case VatPaymentStatus.ACTIVE:
-      return 'success';
-    case VatPaymentStatus.EXEMPT:
-      return 'info';
-    case VatPaymentStatus.INACTIVE:
-      return 'error';
-    case VatPaymentStatus.UNKNOWN:
-    default:
-      return 'warning';
-  }
-};
-
-const getStatusIcon = (status: VatPaymentStatus): string => {
-  switch (status) {
-    case VatPaymentStatus.ACTIVE:
-      return 'mdi-check-circle';
-    case VatPaymentStatus.EXEMPT:
-      return 'mdi-shield-check';
-    case VatPaymentStatus.INACTIVE:
-      return 'mdi-close-circle';
-    case VatPaymentStatus.UNKNOWN:
-    default:
-      return 'mdi-help-circle';
-  }
-};
-
-const getStatusText = (status: VatPaymentStatus): string => {
-  switch (status) {
-    case VatPaymentStatus.ACTIVE:
-      return 'Aktywny';
-    case VatPaymentStatus.EXEMPT:
-      return 'Zwolniony';
-    case VatPaymentStatus.INACTIVE:
-      return 'Nieaktywny';
-    case VatPaymentStatus.UNKNOWN:
-    default:
-      return 'Nieznany';
-  }
-};
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('pl-PL', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
 
 onMounted(() => {
   loadContractors();

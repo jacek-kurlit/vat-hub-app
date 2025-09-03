@@ -21,6 +21,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             contractors::fetch_contractor_data,
+            contractors::fetch_contractors,
             contractors::save_contractor
         ])
         .run(tauri::generate_context!())

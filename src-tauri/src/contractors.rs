@@ -28,13 +28,24 @@ impl ContractorService {
             .ok_or_else(|| "Nie znaleziono kontrahenta".to_string())?;
         Ok(Contractor {
             name: subject.name,
+            nip: subject.nip,
             vat_status: subject.status_vat,
             regon: subject.regon,
             krs: subject.krs.unwrap_or_default(),
             residence_address: subject.residence_address,
+            working_address: subject.working_address,
             accounts_numbers: subject.account_numbers,
         })
     }
+
+    pub async fn fetch_contractors(
+        &self,
+        page: usize,
+        page_size: usize,
+    ) -> Result<Vec<Contractor>, String> {
+        self.repo.fetch_contractors(page, page_size).await
+    }
+
     pub async fn save_contractor(&self, contractor: Contractor) -> Result<(), String> {
         self.repo.save_contractor(contractor).await
     }
@@ -43,10 +54,12 @@ impl ContractorService {
 #[derive(Serialize, Deserialize)]
 pub struct Contractor {
     name: String,
+    nip: String,
     vat_status: String,
     regon: String,
     krs: String,
-    residence_address: String,
+    residence_address: Option<String>,
+    working_address: Option<String>,
     accounts_numbers: Vec<String>,
 }
 
@@ -65,4 +78,13 @@ pub async fn save_contractor(
     service: State<'_, ContractorService>,
 ) -> Result<(), String> {
     service.save_contractor(contractor).await
+}
+
+#[tauri::command]
+pub async fn fetch_contractors(
+    page: usize,
+    page_size: usize,
+    service: State<'_, ContractorService>,
+) -> Result<Vec<Contractor>, String> {
+    service.fetch_contractors(page, page_size).await
 }
