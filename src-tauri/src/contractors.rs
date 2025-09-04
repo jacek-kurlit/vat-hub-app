@@ -39,7 +39,7 @@ impl ContractorService {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct Contractor {
     name: String,
     nip: String,

@@ -136,3 +136,256 @@ impl From<ContractorRow> for Contractor {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqliteConnectOptions;
+    use sqlx::Pool;
+    use tempfile::NamedTempFile;
+
+    #[tokio::test]
+    async fn test_save_contractor_success() {
+        let repo = ContractorRepository::test_repository().await;
+        let contractor = Contractor::fixture();
+
+        let result = repo.save_contractor(contractor).await;
+        dbg!(&result);
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_save_contractor_with_optional_fields_none() {
+        let repo = ContractorRepository::test_repository().await;
+        let contractor = Contractor {
+            krs: None,
+            residence_address: None,
+            working_address: None,
+            accounts_numbers: vec![],
+            ..Contractor::fixture()
+        };
+
+        let result = repo.save_contractor(contractor).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_fetch_contractors_empty_database() {
+        let repo = ContractorRepository::test_repository().await;
+
+        let result = repo.fetch_contractors(1, 10, None).await;
+        assert!(result.is_ok());
+        let contractors = result.unwrap();
+        assert_eq!(contractors.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_fetch_contractors_with_data() {
+        let repo = ContractorRepository::test_repository().await;
+
+        // Save a test contractor
+        let contractor = Contractor::fixture();
+        repo.save_contractor(contractor.clone()).await.unwrap();
+
+        let result = repo.fetch_contractors(1, 10, None).await;
+        assert!(result.is_ok());
+        let contractors = result.unwrap();
+        assert_eq!(contractors.len(), 1);
+
+        let fetched = &contractors[0];
+        assert_eq!(fetched, &contractor);
+    }
+
+    #[tokio::test]
+    async fn test_fetch_contractors_pagination() {
+        let repo = ContractorRepository::test_repository().await;
+
+        // Save multiple contractors
+        for i in 1..=5 {
+            let contractor = Contractor {
+                name: format!("Company {}", i),
+                nip: format!("123456789{}", i),
+                vat_status: "Active".to_string(),
+                regon: format!("12345678{}", i),
+                krs: None,
+                residence_address: None,
+                working_address: None,
+                accounts_numbers: vec![],
+            };
+            repo.save_contractor(contractor).await.unwrap();
+        }
+
+        // Test first page
+        let result = repo.fetch_contractors(1, 2, None).await;
+        assert!(result.is_ok());
+        let contractors = result.unwrap();
+        assert_eq!(contractors.len(), 2);
+
+        // Test second page
+        let result = repo.fetch_contractors(2, 2, None).await;
+        assert!(result.is_ok());
+        let contractors = result.unwrap();
+        assert_eq!(contractors.len(), 2);
+
+        // Test third page
+        let result = repo.fetch_contractors(3, 2, None).await;
+        assert!(result.is_ok());
+        let contractors = result.unwrap();
+        assert_eq!(contractors.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_fetch_contractors_search_by_name() {
+        let repo = ContractorRepository::test_repository().await;
+
+        // Save contractors with different names
+        let contractor1 = Contractor {
+            name: "ABC Company".to_string(),
+            nip: "1111111111".to_string(),
+            vat_status: "Active".to_string(),
+            regon: "111111111".to_string(),
+            krs: None,
+            residence_address: None,
+            working_address: None,
+            accounts_numbers: vec![],
+        };
+
+        let contractor2 = Contractor {
+            name: "XYZ Corporation".to_string(),
+            nip: "2222222222".to_string(),
+            vat_status: "Active".to_string(),
+            regon: "222222222".to_string(),
+            krs: None,
+            residence_address: None,
+            working_address: None,
+            accounts_numbers: vec![],
+        };
+
+        repo.save_contractor(contractor1).await.unwrap();
+        repo.save_contractor(contractor2).await.unwrap();
+
+        // Search for "ABC"
+        let result = repo.fetch_contractors(1, 10, Some("ABC".to_string())).await;
+        assert!(result.is_ok());
+        let contractors = result.unwrap();
+        assert_eq!(contractors.len(), 1);
+        assert_eq!(contractors[0].name, "ABC Company");
+    }
+
+    #[tokio::test]
+    async fn test_fetch_contractors_search_by_nip() {
+        let repo = ContractorRepository::test_repository().await;
+
+        let contractor = Contractor {
+            name: "Test Company".to_string(),
+            nip: "5555555555".to_string(),
+            vat_status: "Active".to_string(),
+            regon: "555555555".to_string(),
+            krs: None,
+            residence_address: None,
+            working_address: None,
+            accounts_numbers: vec![],
+        };
+
+        repo.save_contractor(contractor).await.unwrap();
+
+        // Search by partial NIP
+        let result = repo
+            .fetch_contractors(1, 10, Some("5555".to_string()))
+            .await;
+        assert!(result.is_ok());
+        let contractors = result.unwrap();
+        assert_eq!(contractors.len(), 1);
+        assert_eq!(contractors[0].nip, "5555555555");
+    }
+
+    #[tokio::test]
+    async fn test_fetch_contractors_no_search_results() {
+        let repo = ContractorRepository::test_repository().await;
+
+        let contractor = Contractor::fixture();
+        repo.save_contractor(contractor).await.unwrap();
+
+        // Search for something that doesn't exist
+        let result = repo
+            .fetch_contractors(1, 10, Some("NonExistent".to_string()))
+            .await;
+        assert!(result.is_ok());
+        let contractors = result.unwrap();
+        assert_eq!(contractors.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_fetch_contractors_multiple_accounts() {
+        let repo = ContractorRepository::test_repository().await;
+
+        let contractor = Contractor {
+            name: "Multi Account Company".to_string(),
+            nip: "7777777777".to_string(),
+            vat_status: "Active".to_string(),
+            regon: "777777777".to_string(),
+            krs: None,
+            residence_address: None,
+            working_address: None,
+            accounts_numbers: vec![
+                "11111111111111111111111111".to_string(),
+                "22222222222222222222222222".to_string(),
+                "33333333333333333333333333".to_string(),
+            ],
+        };
+
+        repo.save_contractor(contractor).await.unwrap();
+
+        let result = repo.fetch_contractors(1, 10, None).await;
+        assert!(result.is_ok());
+        let contractors = result.unwrap();
+        assert_eq!(contractors.len(), 1);
+        assert_eq!(contractors[0].accounts_numbers.len(), 3);
+    }
+
+    impl Contractor {
+        fn fixture() -> Contractor {
+            Contractor {
+                name: "Test Company".to_string(),
+                nip: "1234567890".to_string(),
+                vat_status: "Active".to_string(),
+                regon: "123456789".to_string(),
+                krs: Some("0000123456".to_string()),
+                residence_address: Some("Test Address 1".to_string()),
+                working_address: Some("Test Address 2".to_string()),
+                accounts_numbers: vec![
+                    "12345678901234567890123456".to_string(),
+                    "98765432109876543210987654".to_string(),
+                ],
+            }
+        }
+    }
+
+    impl Database {
+        async fn test_database() -> Database {
+            let temp_file = NamedTempFile::new().unwrap();
+            let db_path = temp_file.path();
+
+            let connection_options = SqliteConnectOptions::new()
+                // .in_memory(true)
+                .filename(db_path)
+                .create_if_missing(true)
+                .foreign_keys(true)
+                .journal_mode(sqlx::sqlite::SqliteJournalMode::Memory);
+
+            let pool = Pool::connect_with(connection_options).await.unwrap();
+
+            // Run migrations
+            sqlx::migrate!("./migrations").run(&pool).await.unwrap();
+
+            Database { pool }
+        }
+    }
+
+    impl ContractorRepository {
+        async fn test_repository() -> ContractorRepository {
+            let db = Database::test_database().await;
+            ContractorRepository::new(db)
+        }
+    }
+}
