@@ -125,7 +125,8 @@ const fetchContractors = async (page: number, limit: number, search?: string): P
   try {
     const contractors = await invoke<Contractor[]>('fetch_contractors', { 
       page: page,
-      pageSize: limit 
+      pageSize: limit ,
+      search: search ? search.trim() : null,
     });
     
     // Filter data based on search query on frontend side

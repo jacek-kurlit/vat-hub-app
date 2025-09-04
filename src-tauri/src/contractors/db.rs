@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use sqlx::Acquire;
 
 use crate::{contractors::Contractor, Database};
@@ -10,11 +8,10 @@ pub struct ContractorRepository {
 
 #[derive(sqlx::FromRow)]
 struct ContractorRow {
-    id: i64,
     name: String,
     nip: String,
     vat_status: String,
-    regon: Option<String>,
+    regon: String,
     krs: Option<String>,
     residence_address: Option<String>,
     working_address: Option<String>,
@@ -71,23 +68,29 @@ impl ContractorRepository {
         &self,
         page: usize,
         page_size: usize,
+        search: Option<String>,
     ) -> Result<Vec<Contractor>, String> {
         let size = page_size as i64;
         let offset = (page.saturating_sub(1) * page_size) as i64;
+        let search_pattern = search
+            .map(|s| format!("%{}%", s))
+            .unwrap_or("%%".to_string());
 
         let rows = sqlx::query_as!(
             ContractorRow,
             r#"
             SELECT
-                c.id, c.name, c.nip, c.vat_status, c.regon, c.krs,
+                c.name, c.nip, c.vat_status, c.regon, c.krs,
                 c.residence_address, c.working_address, an.account_number
             FROM (
-                SELECT id FROM contractors ORDER BY id LIMIT ? OFFSET ?
+                SELECT id FROM contractors WHERE nip LIKE ? or name LIKE ? ORDER BY id LIMIT ? OFFSET ?
             ) AS page
             JOIN contractors c ON c.id = page.id
             LEFT JOIN account_numbers an ON c.id = an.contractor_id
             ORDER BY c.id;
             "#,
+            search_pattern,
+            search_pattern,
             size,
             offset
         )
@@ -95,25 +98,41 @@ impl ContractorRepository {
         .await
         .map_err(|e| e.to_string())?;
 
-        let mut contractors: HashMap<i64, Contractor> = HashMap::new();
+        let size = rows.len();
+        let res =
+            rows.into_iter()
+                .fold(Vec::with_capacity(size), |mut acc: Vec<Contractor>, row| {
+                    match acc.last_mut() {
+                        Some(contractor) => {
+                            if contractor.nip == row.nip && row.account_number.is_some() {
+                                contractor
+                                    .accounts_numbers
+                                    .push(row.account_number.unwrap());
+                            } else {
+                                acc.push(Contractor::from(row));
+                            }
+                        }
+                        None => {
+                            acc.push(Contractor::from(row));
+                        }
+                    };
+                    acc
+                });
+        Ok(res)
+    }
+}
 
-        for row in rows {
-            let contractor = contractors.entry(row.id).or_insert_with(|| Contractor {
-                name: row.name,
-                nip: row.nip,
-                vat_status: row.vat_status,
-                regon: row.regon.unwrap_or_default(),
-                krs: row.krs.unwrap_or_default(),
-                residence_address: row.residence_address,
-                working_address: row.working_address,
-                accounts_numbers: Vec::new(),
-            });
-
-            if let Some(account_number) = row.account_number {
-                contractor.accounts_numbers.push(account_number);
-            }
+impl From<ContractorRow> for Contractor {
+    fn from(value: ContractorRow) -> Self {
+        Contractor {
+            name: value.name,
+            nip: value.nip,
+            vat_status: value.vat_status,
+            regon: value.regon,
+            krs: value.krs,
+            residence_address: value.residence_address,
+            working_address: value.working_address,
+            accounts_numbers: value.account_number.map_or(vec![], |n| vec![n]),
         }
-
-        Ok(contractors.into_values().collect())
     }
 }

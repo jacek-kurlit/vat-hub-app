@@ -19,31 +19,19 @@ impl ContractorService {
     }
 
     pub async fn fetch_contractor_data(&self, nip: String) -> Result<Contractor, String> {
-        let subject = self
-            .api_client
+        self.api_client
             .fetch_contractor_data(&nip)
             .await?
-            .result
-            .subject
-            .ok_or_else(|| "Nie znaleziono kontrahenta".to_string())?;
-        Ok(Contractor {
-            name: subject.name,
-            nip: subject.nip,
-            vat_status: subject.status_vat,
-            regon: subject.regon,
-            krs: subject.krs.unwrap_or_default(),
-            residence_address: subject.residence_address,
-            working_address: subject.working_address,
-            accounts_numbers: subject.account_numbers,
-        })
+            .ok_or_else(|| "Nie znaleziono kontrahenta".to_string())
     }
 
     pub async fn fetch_contractors(
         &self,
         page: usize,
         page_size: usize,
+        search: Option<String>,
     ) -> Result<Vec<Contractor>, String> {
-        self.repo.fetch_contractors(page, page_size).await
+        self.repo.fetch_contractors(page, page_size, search).await
     }
 
     pub async fn save_contractor(&self, contractor: Contractor) -> Result<(), String> {
@@ -57,18 +45,18 @@ pub struct Contractor {
     nip: String,
     vat_status: String,
     regon: String,
-    krs: String,
+    krs: Option<String>,
     residence_address: Option<String>,
     working_address: Option<String>,
     accounts_numbers: Vec<String>,
 }
 
+//TODO: unify error handling strategy
 #[tauri::command]
 pub async fn fetch_contractor_data(
     nip: String,
     service: State<'_, ContractorService>,
 ) -> Result<Contractor, String> {
-    //TODO: this method may map errors to FE friendly format
     service.fetch_contractor_data(nip).await
 }
 
@@ -80,11 +68,14 @@ pub async fn save_contractor(
     service.save_contractor(contractor).await
 }
 
+//TODO: add missing tests
+//TODO: add sorting
 #[tauri::command]
 pub async fn fetch_contractors(
     page: usize,
     page_size: usize,
+    search: Option<String>,
     service: State<'_, ContractorService>,
 ) -> Result<Vec<Contractor>, String> {
-    service.fetch_contractors(page, page_size).await
+    service.fetch_contractors(page, page_size, search).await
 }
