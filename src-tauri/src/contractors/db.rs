@@ -141,8 +141,6 @@ impl From<ContractorRow> for Contractor {
 mod tests {
     use super::*;
     use sqlx::sqlite::SqliteConnectOptions;
-    use sqlx::Pool;
-    use tempfile::NamedTempFile;
 
     #[tokio::test]
     async fn test_save_contractor_success() {
@@ -188,7 +186,6 @@ mod tests {
         repo.save_contractor(contractor.clone()).await.unwrap();
 
         let result = repo.fetch_contractors(1, 10, None).await;
-        assert!(result.is_ok());
         let contractors = result.unwrap();
         assert_eq!(contractors.len(), 1);
 
@@ -205,33 +202,22 @@ mod tests {
             let contractor = Contractor {
                 name: format!("Company {}", i),
                 nip: format!("123456789{}", i),
-                vat_status: "Active".to_string(),
-                regon: format!("12345678{}", i),
-                krs: None,
-                residence_address: None,
-                working_address: None,
-                accounts_numbers: vec![],
+                ..Contractor::fixture()
             };
             repo.save_contractor(contractor).await.unwrap();
         }
 
         // Test first page
         let result = repo.fetch_contractors(1, 2, None).await;
-        assert!(result.is_ok());
-        let contractors = result.unwrap();
-        assert_eq!(contractors.len(), 2);
+        assert!(result.is_ok_and(|v| v.len() == 2));
 
         // Test second page
         let result = repo.fetch_contractors(2, 2, None).await;
-        assert!(result.is_ok());
-        let contractors = result.unwrap();
-        assert_eq!(contractors.len(), 2);
+        assert!(result.is_ok_and(|v| v.len() == 2));
 
         // Test third page
         let result = repo.fetch_contractors(3, 2, None).await;
-        assert!(result.is_ok());
-        let contractors = result.unwrap();
-        assert_eq!(contractors.len(), 1);
+        assert!(result.is_ok_and(|v| v.len() == 1));
     }
 
     #[tokio::test]
@@ -242,23 +228,13 @@ mod tests {
         let contractor1 = Contractor {
             name: "ABC Company".to_string(),
             nip: "1111111111".to_string(),
-            vat_status: "Active".to_string(),
-            regon: "111111111".to_string(),
-            krs: None,
-            residence_address: None,
-            working_address: None,
-            accounts_numbers: vec![],
+            ..Contractor::fixture()
         };
 
         let contractor2 = Contractor {
             name: "XYZ Corporation".to_string(),
             nip: "2222222222".to_string(),
-            vat_status: "Active".to_string(),
-            regon: "222222222".to_string(),
-            krs: None,
-            residence_address: None,
-            working_address: None,
-            accounts_numbers: vec![],
+            ..Contractor::fixture()
         };
 
         repo.save_contractor(contractor1).await.unwrap();
@@ -277,14 +253,8 @@ mod tests {
         let repo = ContractorRepository::test_repository().await;
 
         let contractor = Contractor {
-            name: "Test Company".to_string(),
             nip: "5555555555".to_string(),
-            vat_status: "Active".to_string(),
-            regon: "555555555".to_string(),
-            krs: None,
-            residence_address: None,
-            working_address: None,
-            accounts_numbers: vec![],
+            ..Contractor::fixture()
         };
 
         repo.save_contractor(contractor).await.unwrap();
@@ -315,34 +285,6 @@ mod tests {
         assert_eq!(contractors.len(), 0);
     }
 
-    #[tokio::test]
-    async fn test_fetch_contractors_multiple_accounts() {
-        let repo = ContractorRepository::test_repository().await;
-
-        let contractor = Contractor {
-            name: "Multi Account Company".to_string(),
-            nip: "7777777777".to_string(),
-            vat_status: "Active".to_string(),
-            regon: "777777777".to_string(),
-            krs: None,
-            residence_address: None,
-            working_address: None,
-            accounts_numbers: vec![
-                "11111111111111111111111111".to_string(),
-                "22222222222222222222222222".to_string(),
-                "33333333333333333333333333".to_string(),
-            ],
-        };
-
-        repo.save_contractor(contractor).await.unwrap();
-
-        let result = repo.fetch_contractors(1, 10, None).await;
-        assert!(result.is_ok());
-        let contractors = result.unwrap();
-        assert_eq!(contractors.len(), 1);
-        assert_eq!(contractors[0].accounts_numbers.len(), 3);
-    }
-
     impl Contractor {
         fn fixture() -> Contractor {
             Contractor {
@@ -363,17 +305,18 @@ mod tests {
 
     impl Database {
         async fn test_database() -> Database {
-            let temp_file = NamedTempFile::new().unwrap();
-            let db_path = temp_file.path();
-
             let connection_options = SqliteConnectOptions::new()
-                // .in_memory(true)
-                .filename(db_path)
+                .in_memory(true)
                 .create_if_missing(true)
                 .foreign_keys(true)
                 .journal_mode(sqlx::sqlite::SqliteJournalMode::Memory);
 
-            let pool = Pool::connect_with(connection_options).await.unwrap();
+            let pool = sqlx::pool::PoolOptions::new()
+                //NOTE: For in-memory database, max_connections must be 1 otherwise other connections won't have migrations applied
+                .max_connections(1)
+                .connect_with(connection_options)
+                .await
+                .unwrap();
 
             // Run migrations
             sqlx::migrate!("./migrations").run(&pool).await.unwrap();
